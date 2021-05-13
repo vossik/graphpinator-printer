@@ -79,3 +79,6 @@ a[href]:hover {
 .offset > .offset > .line {
     margin-left: 20px;
 }
+section:target {
+    background-color: rgb(49, 50, 43);
+}
