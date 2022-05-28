@@ -12,6 +12,7 @@ final class HtmlVisitor implements PrintComponentVisitor
     private const LINK_TITLES = ['Go to query root type', 'Go to mutation root type', 'Go to subscription root type'];
 
     private FieldCollector $fieldCollector;
+    private array $types = [];
 
     public function __construct(
         ?FieldCollector $fieldCollector = null,
@@ -66,8 +67,18 @@ final class HtmlVisitor implements PrintComponentVisitor
         EOL;
     }
 
+    private function storeType(string $type, string $href, string $name) : void
+    {
+        $this->types[$type][] = [
+            'href' => $href,
+            'name' => $name,
+        ];
+    }
+
     public function visitType(\Graphpinator\Typesystem\Type $type) : string
     {
+        $this->storeType('type', 'graphql-type-' . $type->getName(), $type->getName());
+
         return <<<EOL
         <section id="graphql-type-{$type->getName()}">
             {$this->printDescription($type->getDescription())}
@@ -92,6 +103,8 @@ final class HtmlVisitor implements PrintComponentVisitor
 
     public function visitInterface(\Graphpinator\Typesystem\InterfaceType $interface) : string
     {
+        $this->storeType('interface', 'graphql-type-' . $interface->getName(), $interface->getName());
+
         return <<<EOL
         <section id="graphql-type-{$interface->getName()}">
             {$this->printDescription($interface->getDescription())}
@@ -116,6 +129,8 @@ final class HtmlVisitor implements PrintComponentVisitor
 
     public function visitUnion(\Graphpinator\Typesystem\UnionType $union) : string
     {
+        $this->storeType('union', 'graphql-type-' . $union->getName(), $union->getName());
+
         $typeNames = [];
 
         foreach ($union->getTypes() as $type) {
@@ -141,6 +156,8 @@ final class HtmlVisitor implements PrintComponentVisitor
 
     public function visitInput(\Graphpinator\Typesystem\InputType $input) : string
     {
+        $this->storeType('input', 'graphql-type-' . $input->getName(), $input->getName());
+
         return <<<EOL
         <section id="graphql-type-{$input->getName()}">
             {$this->printDescription($input->getDescription())}
@@ -164,6 +181,8 @@ final class HtmlVisitor implements PrintComponentVisitor
 
     public function visitScalar(\Graphpinator\Typesystem\ScalarType $scalar) : string
     {
+        $this->storeType('scalar', 'graphql-type-' . $scalar->getName(), $scalar->getName());
+
         return <<<EOL
         <section id="graphql-type-{$scalar->getName()}">
             {$this->printDescription($scalar->getDescription())}
@@ -180,6 +199,8 @@ final class HtmlVisitor implements PrintComponentVisitor
 
     public function visitEnum(\Graphpinator\Typesystem\EnumType $enum) : string
     {
+        $this->storeType('enum', 'graphql-type-' . $enum->getName(), $enum->getName());
+
         return <<<EOL
         <section id="graphql-type-{$enum->getName()}">
             {$this->printDescription($enum->getDescription())}
@@ -203,6 +224,8 @@ final class HtmlVisitor implements PrintComponentVisitor
 
     public function visitDirective(\Graphpinator\Typesystem\Directive $directive) : string
     {
+        $this->storeType('directive', 'graphql-directive-' . $directive->getName(), $directive->getName());
+
         $repeatable = $directive->isRepeatable()
             ? '&nbsp;<span class="keyword">repeatable</span>'
             : '';
@@ -301,6 +324,7 @@ final class HtmlVisitor implements PrintComponentVisitor
     {
         $html = '<div class="graphpinator-schema">'
             . self::printFloatingButtons($entries[0])
+            . self::printFloatingTypes($this->types)
             . '<div class="code">'
             . \implode(self::emptyLine(), $entries)
             . '</div></div>';
@@ -311,6 +335,35 @@ final class HtmlVisitor implements PrintComponentVisitor
 
         // Replace empty line div with empty line containing &nbsp; (empty divs are ignored by browsers)
         return \str_replace('<div class="line"></div>', self::emptyLine(), $html);
+    }
+
+    public static function printFloatingTypes(array $categories) : string
+    {
+        $toReturn = '<div class="floating-container-types">';
+
+        foreach ($categories as $category => $types) {
+            $toReturn .= self::printCategoryTypes($category, $types);
+        }
+
+        return $toReturn . '</div>';
+    }
+
+    private static function printCategoryTypes(string $category, array $types) : string
+    {
+        if (\count($types) === 0) {
+            return '';
+        }
+
+        $toReturn = <<<EOL
+        <details>
+            <summary>{$category}</summary>
+        EOL;
+
+        foreach ($types as $type) {
+            $toReturn .= '<a href="#' . $type['href'] . '" class="summary-type">' . $type['name'] . '</a>';
+        }
+
+        return $toReturn . '</details>';
     }
 
     /**

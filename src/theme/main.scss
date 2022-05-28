@@ -126,4 +126,21 @@
             opacity: 1;
         }
     }
+
+    .floating-container-types {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 100;
+        padding: 12px;
+        background-color: gray;
+        border-radius: 10px;
+        max-height: 50vh;
+        overflow-y: auto;
+    }
+
+    .summary-type {
+        display: block;
+        margin-left: 20px;
+    }
 }
