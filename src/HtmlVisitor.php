@@ -6,8 +6,6 @@ namespace Graphpinator\Printer;
 
 final class HtmlVisitor implements PrintComponentVisitor
 {
-    use \Nette\SmartObject;
-
     private const LINK_TEXTS = ['Q', 'M', 'S'];
     private const LINK_TITLES = ['Go to query root type', 'Go to mutation root type', 'Go to subscription root type'];
 
@@ -23,14 +21,13 @@ final class HtmlVisitor implements PrintComponentVisitor
 
     public function visitSchema(\Graphpinator\Typesystem\Schema $schema) : string
     {
-        $query = '<span class="field-type">' . self::printTypeLink($schema->getQuery()) . '</span>';
+        $query = self::generateRootTypeLink($schema->getQuery(), 'query');
         $mutation = $schema->getMutation() instanceof \Graphpinator\Typesystem\Type
-            ? '<span class="field-type">' . self::printTypeLink($schema->getMutation()) . '</span>'
-            : '<span class="null">null</span>';
-
+            ? self::generateRootTypeLink($schema->getMutation(), 'mutation')
+            : '';
         $subscription = $schema->getSubscription() instanceof \Graphpinator\Typesystem\Type
-            ? '<span class="field-type">' . self::printTypeLink($schema->getSubscription()) . '</span>'
-            : '<span class="null">null</span>';
+            ? self::generateRootTypeLink($schema->getSubscription(), 'subscription')
+            : '';
 
         return <<<EOL
         <section id="graphql-schema">
@@ -43,26 +40,26 @@ final class HtmlVisitor implements PrintComponentVisitor
                 <span class="bracket-curly">{</span>
             </div>
             <div class="offset">
-                <div class="line">
-                    <span class="field-name">query</span>
-                    <span class="colon">:</span>&nbsp;
-                    {$query}
-                </div>
-                <div class="line">
-                    <span class="field-name">mutation</span>
-                    <span class="colon">:</span>&nbsp;
-                    {$mutation}
-                </div>
-                <div class="line">
-                    <span class="field-name">subscription</span>
-                    <span class="colon">:</span>&nbsp;
-                    {$subscription}
-                </div>
+                {$query}
+                {$mutation}
+                {$subscription}
             </div>
             <div class="line">
                 <span class="bracket-curly">}</span>
             </div>
         </section>
+        EOL;
+    }
+
+    private static function generateRootTypeLink(\Graphpinator\Typesystem\Type $type, string $rootType) : string
+    {
+        $link = self::printTypeLink($type);
+
+        return <<<EOL
+        <div class="line">
+                    <span class="field-name">{$rootType}</span>
+                    <span class="colon">:</span>&nbsp;<span class="field-type">{$link}</span>
+                </div>
         EOL;
     }
 
@@ -208,7 +205,7 @@ final class HtmlVisitor implements PrintComponentVisitor
             : '';
         $locations = \implode(
             '</span>&nbsp;<span class="vertical-line">|</span>&nbsp;<span class="enum-literal">',
-            $directive->getLocations(),
+            \array_column($directive->getLocations(), 'value'),
         );
 
         return <<<EOL
